@@ -300,6 +300,14 @@ namespace PdfiumWasmIntegration
                 // Read JSON string from WASM memory
                 string jsonString = ReadStringFromMemory(jsonPtr);
 
+                // Debug: print raw JSON string length and preview
+                Console.WriteLine($"\n[DEBUG] JSON string length: {jsonString.Length}");
+                Console.WriteLine($"[DEBUG] JSON preview (first 500 chars):");
+                Console.WriteLine(jsonString.Length > 500 ? jsonString.Substring(0, 500) : jsonString);
+                Console.WriteLine($"[DEBUG] JSON preview (last 200 chars):");
+                int startPos = Math.Max(0, jsonString.Length - 200);
+                Console.WriteLine(jsonString.Substring(startPos));
+
                 // Free JSON string
                 qpdfFreeString?.Invoke(jsonPtr);
 

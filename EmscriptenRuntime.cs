@@ -689,6 +689,8 @@ namespace PdfiumWasmIntegration
                         case 6: result = func.Invoke((int)args[0], (int)args[1], (int)args[2], (int)args[3], (int)args[4], (int)args[5]); break;
                         case 7: result = func.Invoke((int)args[0], (int)args[1], (int)args[2], (int)args[3], (int)args[4], (int)args[5], (int)args[6]); break;
                         case 8: result = func.Invoke((int)args[0], (int)args[1], (int)args[2], (int)args[3], (int)args[4], (int)args[5], (int)args[6], (int)args[7]); break;
+                        case 9: result = func.Invoke((int)args[0], (int)args[1], (int)args[2], (int)args[3], (int)args[4], (int)args[5], (int)args[6], (int)args[7], (int)args[8]); break;
+                        case 10: result = func.Invoke((int)args[0], (int)args[1], (int)args[2], (int)args[3], (int)args[4], (int)args[5], (int)args[6], (int)args[7], (int)args[8], (int)args[9]); break;
                         default: Console.WriteLine($"[Invoke] Unsupported argument count: {args.Length}"); break;
                     }
 
