@@ -47,7 +47,7 @@ namespace PdfiumWasmIntegration
             {
                 // Initialize Wasmtime and load WASM module
                 Console.WriteLine("Initializing Pdfium WASM module...");
-                string wasmPath = "/home/akash/Dev/ironsoft/iron-universal/Universal.PdfEditor/build/emscripten/wasm/release/node/pdfium.wasm";
+                string wasmPath = "pdfium.wasm";
 
                 using var engine = new Engine();
                 using var store = new Store(engine);
