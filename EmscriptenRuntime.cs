@@ -455,6 +455,12 @@ namespace PdfiumWasmIntegration
                 Console.WriteLine("[Exception] __cxa_end_catch");
             });
 
+            linker.DefineFunction("env", "__cxa_uncaught_exceptions", (Caller caller) =>
+            {
+                Console.WriteLine("[Exception] __cxa_uncaught_exceptions");
+                return 0; // No uncaught exceptions
+            });
+
             linker.DefineFunction("env", "__cxa_find_matching_catch_2", (Caller caller) =>
             {
                 Console.WriteLine("[Exception] __cxa_find_matching_catch_2");

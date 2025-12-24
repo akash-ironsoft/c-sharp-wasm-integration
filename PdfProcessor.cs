@@ -50,7 +50,7 @@ namespace PdfiumWasmIntegration
             this.instance = instance;
             this.memory = instance.GetMemory("memory");
 
-            // Get Rust wrapper functions
+            // Get Rust wrapper functions (for Rust WASM)
             rustExtractText = instance.GetFunction("pdfium_wasm_extract_text");
             rustPdfToJson = instance.GetFunction("pdfium_wasm_pdf_to_json");
             rustFreeString = instance.GetFunction("pdfium_wasm_free_string");
@@ -69,7 +69,7 @@ namespace PdfiumWasmIntegration
             textCountChars = instance.GetFunction("FPDFText_CountChars");
             textGetText = instance.GetFunction("FPDFText_GetText");
 
-            // Get QPDF functions
+            // Get QPDF functions (for original WASM)
             qpdfPdfToJson = instance.GetFunction("IPDF_QPDF_PDFToJSON");
             qpdfFreeString = instance.GetFunction("IPDF_QPDF_FreeString");
 
@@ -289,7 +289,7 @@ namespace PdfiumWasmIntegration
                 throw new InvalidOperationException("WASM memory not available");
             }
 
-            if (qpdfPdfToJson == null)
+            if (rustPdfToJson == null)
             {
                 throw new InvalidOperationException("QPDF function not available in WASM module");
             }
@@ -300,8 +300,8 @@ namespace PdfiumWasmIntegration
                 int wasmBufferPtr = AllocateMemory(pdfBytes.Length);
                 WriteToMemory(wasmBufferPtr, pdfBytes);
 
-                // Call QPDF function
-                var jsonPtrResult = qpdfPdfToJson.Invoke(wasmBufferPtr, pdfBytes.Length, version);
+                // Call Rust wrapper function: pdfium_wasm_pdf_to_json(pdf_data, pdf_len) -> *mut u8
+                var jsonPtrResult = rustPdfToJson.Invoke(wasmBufferPtr, pdfBytes.Length);
                 int jsonPtr = jsonPtrResult != null ? (int)jsonPtrResult : 0;
 
                 // Free input buffer
@@ -309,9 +309,7 @@ namespace PdfiumWasmIntegration
 
                 if (jsonPtr == 0)
                 {
-                    var errorResult = getLastError?.Invoke();
-                    int errorCode = errorResult != null ? (int)errorResult : 9;
-                    throw new Exception($"QPDF failed to convert PDF to JSON: {GetErrorMessage(errorCode)}");
+                    throw new Exception($"QPDF failed to convert PDF to JSON");
                 }
 
                 // Read JSON string from WASM memory
@@ -326,7 +324,7 @@ namespace PdfiumWasmIntegration
                 Console.WriteLine(jsonString.Substring(startPos));
 
                 // Free JSON string
-                qpdfFreeString?.Invoke(jsonPtr);
+                rustFreeString?.Invoke(jsonPtr);
 
                 // Parse and return JSON
                 return JsonDocument.Parse(jsonString);
