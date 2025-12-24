@@ -47,13 +47,24 @@ namespace PdfiumWasmIntegration
             {
                 // Initialize Wasmtime and load WASM module
                 Console.WriteLine("Initializing Pdfium WASM module...");
-                string wasmPath = "pdfium.wasm";
+                string wasmPath = "/home/akash/Dev/ironsoft/auto-pqdfium-rs/web/auto_pqdfium_rs.wasm";
+                Console.WriteLine($"Loading: {wasmPath}");
 
                 using var engine = new Engine();
                 using var store = new Store(engine);
 
                 var module = Module.FromFile(engine, wasmPath);
                 Console.WriteLine("✓ WASM module loaded");
+
+                // Inspect module imports and exports
+                Console.WriteLine("\nModule Exports (first 20):");
+                int exportCount = 0;
+                foreach (var export in module.Exports)
+                {
+                    if (exportCount++ < 20)
+                        Console.WriteLine($"  {export.Name}");
+                }
+                Console.WriteLine($"Total exports: {module.Exports.Count()}");
 
                 // Set up Emscripten runtime
                 var emscriptenRuntime = new EmscriptenRuntime(store);

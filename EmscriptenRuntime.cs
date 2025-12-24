@@ -63,6 +63,12 @@ namespace PdfiumWasmIntegration
                 return InvokeIndirect<int>(caller, index);
             });
 
+            // long invoke(void)
+            linker.DefineFunction("env", "invoke_j", (Caller caller, int index) =>
+            {
+                return InvokeIndirect<long>(caller, index);
+            });
+
             // int invoke(int)
             linker.DefineFunction("env", "invoke_ii", (Caller caller, int index, int a1) =>
             {
@@ -293,6 +299,12 @@ namespace PdfiumWasmIntegration
                 InvokeIndirect(caller, index, a1, a2, a3, a4);
             });
 
+            // void invoke(int, long, long, long, long)
+            linker.DefineFunction("env", "invoke_vijjjj", (Caller caller, int index, int a1, long a2, long a3, long a4, long a5) =>
+            {
+                InvokeIndirect(caller, index, a1, a2, a3, a4, a5);
+            });
+
             // void invoke(int, int, long, int)
             linker.DefineFunction("env", "invoke_viiji", (Caller caller, int index, int a1, int a2, long a3, int a4) =>
             {
@@ -461,6 +473,12 @@ namespace PdfiumWasmIntegration
                 return lastThrownException;
             });
 
+            linker.DefineFunction("env", "__cxa_find_matching_catch_5", (Caller caller, int a1, int a2, int a3) =>
+            {
+                Console.WriteLine($"[Exception] __cxa_find_matching_catch_5: {a1:X}, {a2:X}, {a3:X}");
+                return lastThrownException;
+            });
+
             linker.DefineFunction("env", "__cxa_find_matching_catch_6", (Caller caller, int a1, int a2, int a3, int a4) =>
             {
                 Console.WriteLine($"[Exception] __cxa_find_matching_catch_6");
@@ -612,6 +630,12 @@ namespace PdfiumWasmIntegration
             {
                 Console.WriteLine("[Syscall] rmdir");
                 return -1;
+            });
+
+            linker.DefineFunction("env", "__syscall_getcwd", (Caller caller, int buf, int size) =>
+            {
+                Console.WriteLine("[Syscall] getcwd");
+                return -1; // Not implemented, return error
             });
         }
 

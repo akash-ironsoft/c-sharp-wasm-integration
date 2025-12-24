@@ -39,13 +39,23 @@ namespace PdfiumWasmIntegration
         private readonly Function? malloc;
         private readonly Function? free;
 
+        // Rust wrapper functions
+        private readonly Function? rustExtractText;
+        private readonly Function? rustPdfToJson;
+        private readonly Function? rustFreeString;
+
         public PdfProcessor(Store store, Instance instance)
         {
             this.store = store;
             this.instance = instance;
             this.memory = instance.GetMemory("memory");
 
-            // Get Pdfium core functions
+            // Get Rust wrapper functions
+            rustExtractText = instance.GetFunction("pdfium_wasm_extract_text");
+            rustPdfToJson = instance.GetFunction("pdfium_wasm_pdf_to_json");
+            rustFreeString = instance.GetFunction("pdfium_wasm_free_string");
+
+            // Get Pdfium core functions (kept for compatibility)
             loadMemDocument = instance.GetFunction("FPDF_LoadMemDocument");
             getPageCount = instance.GetFunction("FPDF_GetPageCount");
             loadPage = instance.GetFunction("FPDF_LoadPage");
@@ -53,7 +63,7 @@ namespace PdfiumWasmIntegration
             closeDocument = instance.GetFunction("FPDF_CloseDocument");
             getLastError = instance.GetFunction("FPDF_GetLastError");
 
-            // Get text extraction functions
+            // Get text extraction functions (kept for compatibility)
             textLoadPage = instance.GetFunction("FPDFText_LoadPage");
             textClosePage = instance.GetFunction("FPDFText_ClosePage");
             textCountChars = instance.GetFunction("FPDFText_CountChars");
@@ -108,7 +118,7 @@ namespace PdfiumWasmIntegration
         }
 
         /// <summary>
-        /// Extract text from PDF bytes using Pdfium
+        /// Extract text from PDF bytes using Pdfium Rust wrapper
         /// </summary>
         /// <param name="pdfBytes">PDF file bytes</param>
         /// <returns>Text extraction result</returns>
@@ -119,6 +129,11 @@ namespace PdfiumWasmIntegration
                 throw new InvalidOperationException("WASM memory not available");
             }
 
+            if (rustExtractText == null)
+            {
+                throw new InvalidOperationException("pdfium_wasm_extract_text function not found");
+            }
+
             var result = new TextExtractionResult();
 
             try
@@ -127,35 +142,37 @@ namespace PdfiumWasmIntegration
                 int wasmBufferPtr = AllocateMemory(pdfBytes.Length);
                 WriteToMemory(wasmBufferPtr, pdfBytes);
 
-                // Load PDF document
-                var docPtrResult = loadMemDocument?.Invoke(wasmBufferPtr, pdfBytes.Length, 0);
-                int docPtr = docPtrResult != null ? (int)docPtrResult : 0;
+                // Call Rust wrapper function: pdfium_wasm_extract_text(pdf_data, pdf_len) -> *mut u8
+                var textPtrResult = rustExtractText.Invoke(wasmBufferPtr, pdfBytes.Length);
+                int textPtr = textPtrResult != null ? (int)textPtrResult : 0;
 
-                if (docPtr == 0)
-                {
-                    var errorResult = getLastError?.Invoke();
-                    int errorCode = errorResult != null ? (int)errorResult : 1;
-                    FreeMemory(wasmBufferPtr);
-                    throw new Exception($"Failed to load PDF: {GetErrorMessage(errorCode)}");
-                }
-
-                // Get page count
-                var pageCountResult = getPageCount?.Invoke(docPtr);
-                int pageCount = pageCountResult != null ? (int)pageCountResult : 0;
-                result.PageCount = pageCount;
-
-                Console.WriteLine($"PDF has {pageCount} pages");
-
-                // Extract text from each page
-                for (int i = 0; i < pageCount; i++)
-                {
-                    var pageText = ExtractPageText((int)docPtr, i);
-                    result.Pages.Add(pageText);
-                }
-
-                // Cleanup
-                closeDocument?.Invoke(docPtr);
+                // Free PDF buffer (no longer needed)
                 FreeMemory(wasmBufferPtr);
+
+                if (textPtr == 0)
+                {
+                    throw new Exception("Failed to load PDF: Unknown error");
+                }
+
+                // Read the UTF-8 text string from WASM memory
+                string fullText = ReadStringFromMemory(textPtr);
+
+                // Free the string returned by Rust
+                rustFreeString?.Invoke(textPtr);
+
+                // Parse the result - Rust returns text with "---PAGE BREAK---" separators
+                var pages = fullText.Split(new[] { "\n---PAGE BREAK---\n" }, StringSplitOptions.None);
+                result.PageCount = pages.Length;
+
+                for (int i = 0; i < pages.Length; i++)
+                {
+                    result.Pages.Add(new PageText
+                    {
+                        PageNumber = i + 1,
+                        Text = pages[i],
+                        CharacterCount = pages[i].Length
+                    });
+                }
 
                 result.Success = true;
                 return result;
