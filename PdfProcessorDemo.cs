@@ -47,7 +47,7 @@ namespace PdfiumWasmIntegration
             {
                 // Initialize Wasmtime and load WASM module
                 Console.WriteLine("Initializing Pdfium WASM module...");
-                string wasmPath = "/home/akash/Dev/ironsoft/auto-pqdfium-rs/web/auto_pqdfium_rs.wasm";
+                string wasmPath = "auto_pqdfium_rs.wasm";
                 Console.WriteLine($"Loading: {wasmPath}");
 
                 using var engine = new Engine();
